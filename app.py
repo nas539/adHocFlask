@@ -21,6 +21,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), nullable=False, unique=True)
     password = db.Column(db.Date(), nullable=False)
+    files = db.relationship("File", cascade="all,delete", backref="user", lazy=True)
    
     def __init__(self, username, password):
         self.username = username
@@ -38,16 +39,18 @@ class Appointment(db.Model):
     title = db.Column(db.String(), nullable=False)
     company = db.Column(db.String(), nullable=False)
     start_date = db.Column(db.String(), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     
-    def __init__(self, title, company, start_date):
+    def __init__(self, title, company, start_date, user_id):
         self.title = title
         self.company = company
         self.start_date = start_date
+        self.user_id = user_id
         
 
 class AppointmentSchema(ma.Schema):
     class Meta:
-        fields = ("id", "title", "company", "start_date")
+        fields = ("id", "title", "company", "start_date", "user_id")
 
 appointment_schema = AppointmentSchema()
 appointments_schema = AppointmentSchema(many=True)
@@ -113,9 +116,11 @@ def add_appointment():
     title = post_data.get("title")
     company = post_data.get("company")
     start_date = post_data.get("start_date")
-    
+    username = request.form.get("username")
 
-    new_appointment = Appointment(title, company, start_date)
+    user_id = db.session.query(User.id).filter(User.username == username).first()
+
+    new_appointment = Appointment(title, company, start_date, user_id[0])
     db.session.add(new_appointment)
     db.session.commit()
 
@@ -130,6 +135,12 @@ def get_appointment_data():
 def get_appointment(id):
     appointment_data = db.session.query(Appointment).filter(Appointment.id == id).first()
     return jsonify(appointment_schema.dump(appointment_data))
+
+@app.route("/appointment/get/data/<username>", methods=["GET"])
+def get_appointment_data_by_username(username):
+    user_id = db.session.query(User.id).filter(User.username == username).first()[0]
+    appointment_data = db.session.query(Appointment).filter(Appointment.user_id == user_id).all()
+    return jsonify(appointments_schema.dump(appointment_data))
 
 @app.route("/appointment/delete/<id>", methods=["DELETE"])
 def delete_appointment(id):
