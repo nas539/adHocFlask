@@ -8,7 +8,7 @@ import io
 
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = ""
+app.config["SQLALCHEMY_DATABASE_URI"] = "postgres://xfvyofdhhgnzby:6b14ce9e8b7a812f30ed364d1ef5d5072ba00a2c8bb813c19d837eedee3371aa@ec2-35-172-85-250.compute-1.amazonaws.com:5432/d961sr6j8si2vb"
 
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
@@ -18,10 +18,10 @@ CORS(app)
 bcrypt = Bcrypt(app)
 
 class User(db.Model):
+    __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), nullable=False, unique=True)
     password = db.Column(db.Date(), nullable=False)
-    appointments = db.relationship("Appointment", cascade="all,delete", backref="user", lazy=True)
    
     def __init__(self, username, password):
         self.username = username
@@ -39,7 +39,8 @@ class Appointment(db.Model):
     title = db.Column(db.String(), nullable=False)
     company = db.Column(db.String(), nullable=False)
     start_date = db.Column(db.String(), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    author_comment = db.relationship('Users', backref='appointments', lazy='joined')
     
     def __init__(self, title, company, start_date, user_id):
         self.title = title
