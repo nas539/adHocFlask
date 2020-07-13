@@ -106,6 +106,28 @@ def verify_user():
 
     return jsonify("User verified")
 
+@app.route("/appointment/add", methods=["POST"])
+def add_appointment():
+    if request.content_type != "application/json":
+        return jsonify("Error")
+
+    post_data = request.get_json()
+    title = post_data.get("title")
+    company = post_data.get("company")
+    start_date = post_data.get("start_date")
+    
+
+    new_appointment = Appointment(title, company, start_date)
+    db.session.add(new_appointment)
+    db.session.commit()
+
+    return jsonify("Appointment added!")
+
+@app.route("/appointment/get/data", methods=["GET"])
+def get_appointment_data():
+    appointment_data = db.session.query(Appointment).all()
+    return jsonify(appointments_schema.dump(appointment_data))
+
 
 if __name__ == "__main__":
     app.run(debug=True)
