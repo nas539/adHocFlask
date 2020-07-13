@@ -21,7 +21,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), nullable=False, unique=True)
     password = db.Column(db.Date(), nullable=False)
-    files = db.relationship("File", cascade="all,delete", backref="user", lazy=True)
+    appointments = db.relationship("Appointment", cascade="all,delete", backref="user", lazy=True)
    
     def __init__(self, username, password):
         self.username = username
