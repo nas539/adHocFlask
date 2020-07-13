@@ -6,8 +6,9 @@ from flask_heroku import Heroku
 from flask_bcrypt import Bcrypt
 import io
 
+
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = ""
+app.config["SQLALCHEMY_DATABASE_URI"] = "postgres://nlbiikrokrwtsx:2c7e0f61de53fb1ace7760e788a11b8a2a7cca4d3780c6788c7fb2b7c22378dd@ec2-18-235-109-97.compute-1.amazonaws.com:5432/d6fuljbpovbobk"
 
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
@@ -20,7 +21,6 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), nullable=False, unique=True)
     password = db.Column(db.Date(), nullable=False)
-    appointments = db.relationship("Appointment", cascade="all,delete", backref="user", lazy=True)
    
     def __init__(self, username, password):
         self.username = username
@@ -38,19 +38,16 @@ class Appointment(db.Model):
     title = db.Column(db.String(), nullable=False)
     company = db.Column(db.String(), nullable=False)
     start_date = db.Column(db.String(), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-
     
-    def __init__(self, title, company, start_date, user_id):
+    def __init__(self, title, company, start_date):
         self.title = title
         self.company = company
         self.start_date = start_date
-        self.user_id = user_id
         
 
 class AppointmentSchema(ma.Schema):
     class Meta:
-        fields = ("id", "title", "company", "start_date", "user_id")
+        fields = ("id", "title", "company", "start_date")
 
 appointment_schema = AppointmentSchema()
 appointments_schema = AppointmentSchema(many=True)
@@ -116,10 +113,9 @@ def add_appointment():
     title = post_data.get("title")
     company = post_data.get("company")
     start_date = post_data.get("start_date")
-    username = post_data.get("username")
     
 
-    new_appointment = Appointment(title, company, start_date, user_id[0])
+    new_appointment = Appointment(title, company, start_date)
     db.session.add(new_appointment)
     db.session.commit()
 
@@ -128,12 +124,6 @@ def add_appointment():
 @app.route("/appointment/get/data", methods=["GET"])
 def get_appointment_data():
     appointment_data = db.session.query(Appointment).all()
-    return jsonify(appointments_schema.dump(appointment_data))
-
-@app.route("/appointment/get/data/<username>", methods=["GET"])
-def get_appointment_data_by_username(username):
-    user_id = db.session.query(User.id).filter(User.username == username).first()[0]
-    appointment_data = db.session.query(Appointment).filter(Appointment.user_id == user_id).all()
     return jsonify(appointments_schema.dump(appointment_data))
 
 @app.route("/appointment/get/<id>", methods=["GET"])
